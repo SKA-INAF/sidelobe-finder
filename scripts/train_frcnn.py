@@ -52,7 +52,7 @@ else:
 anchor_scales_str= options.anchor_box_scales
 anchor_scales_str_list= anchor_scales_str.split(",")
 anchor_scales= []
-for item in anchor_scales_str:
+for item in anchor_scales_str_list:
 	anchor_scales.append(int(item))
 
 
