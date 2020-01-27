@@ -84,7 +84,7 @@ else:
 	# set the path to weights based on backend and model
 	C.base_net_weights = nn.get_weight_path()
 
-all_imgs, classes_count, class_mapping = get_data(options.train_path)
+all_imgs, classes_count, class_mapping = get_data(options.train_path,split_train_test_data=split_train_test_data)
 
 if 'bg' not in classes_count:
 	classes_count['bg'] = 0
@@ -108,10 +108,15 @@ with open(config_output_filename, 'wb') as config_f:
 ########################
 ##   ADDED BY SIMONE
 ########################
-## Set anchor scales from command line
+## Disable splitting of train/test data (not used internally so do not waste valuable train data)
+split_train_test_data= False
+
+## Override anchor scales from command line
 C.anchor_box_scales= anchor_scales
 print('Anchor scales')
 print(C.anchor_box_scales)
+#########################
+
 
 random.shuffle(all_imgs)
 

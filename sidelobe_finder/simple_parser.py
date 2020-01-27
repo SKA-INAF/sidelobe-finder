@@ -14,7 +14,7 @@ from . import data_augment
 
 
 
-def get_data(input_path):
+def get_data(input_path,split_train_test_data=True):
 	found_bg = False
 	all_imgs = {}
 
@@ -64,11 +64,13 @@ def get_data(input_path):
 				all_imgs[filename]['height'] = rows
 				all_imgs[filename]['bboxes'] = []
 
-				
-				if np.random.randint(0,6) > 0:
-					all_imgs[filename]['imageset'] = 'trainval'
+				if split_train_test_data:
+					if np.random.randint(0,6) > 0:
+						all_imgs[filename]['imageset'] = 'trainval'
+					else:
+						all_imgs[filename]['imageset'] = 'test'
 				else:
-					all_imgs[filename]['imageset'] = 'test'
+					all_imgs[filename]['imageset'] = 'trainval'					
 
 			all_imgs[filename]['bboxes'].append({'class': class_name, 'x1': int(float(x1)), 'x2': int(float(x2)), 'y1': int(float(y1)), 'y2': int(float(y2))})
 			#print all_imgs[filename]
