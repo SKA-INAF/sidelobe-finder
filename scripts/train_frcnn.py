@@ -33,6 +33,10 @@ parser.add_option("--config_filename", dest="config_filename", help="Location to
 parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.", default='./model_frcnn.hdf5')
 parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
 
+parser.add_option("--anchor_box_scales", dest="anchor_box_scales", help="Anchor box scales", default='2,4,8,16,32')
+
+
+
 (options, args) = parser.parse_args()
 
 if not options.train_path:   # if filename is not given
@@ -44,6 +48,13 @@ elif options.parser == 'simple':
 	from sidelobe_finder.simple_parser import get_data
 else:
 	raise ValueError("Command line option parser must be one of 'pascal_voc' or 'simple'")
+
+anchor_scales_str= options.anchor_box_scales
+anchor_scales_str_list= anchor_scales_str.split(",")
+anchor_scales= []
+for item in anchor_scales_str:
+	anchor_scales.append(int(item))
+
 
 # pass the settings from the command line, and persist them in the config object
 C = config.Config()
@@ -92,6 +103,15 @@ config_output_filename = options.config_filename
 with open(config_output_filename, 'wb') as config_f:
 	pickle.dump(C,config_f)
 	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
+
+
+########################
+##   ADDED BY SIMONE
+########################
+## Set anchor scales from command line
+C.anchor_box_scales= anchor_scales
+print('Anchor scales')
+print(C.anchor_box_scales)
 
 random.shuffle(all_imgs)
 
