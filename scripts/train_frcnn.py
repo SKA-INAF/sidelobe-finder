@@ -84,7 +84,7 @@ else:
 	# set the path to weights based on backend and model
 	C.base_net_weights = nn.get_weight_path()
 
-all_imgs, classes_count, class_mapping = get_data(options.train_path,split_train_test_data=split_train_test_data)
+all_imgs, classes_count, class_mapping = get_data(options.train_path,split_train_test_data)
 
 if 'bg' not in classes_count:
 	classes_count['bg'] = 0
