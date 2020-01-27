@@ -2,7 +2,8 @@ import os
 import cv2
 import xml.etree.ElementTree as ET
 import numpy as np
-def get_data(input_path):
+
+def get_data(input_path,split_train_test_data=True):
 	all_imgs = []
 
 	classes_count = {}
