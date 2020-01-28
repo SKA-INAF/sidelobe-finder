@@ -94,6 +94,9 @@ if C.network == 'resnet50':
 	num_features = 1024
 elif C.network == 'vgg':
 	num_features = 512
+else:
+	print('Not a valid model')
+	raise ValueError
 
 # - Override anchor scales from command line
 C.anchor_box_scales= anchor_scales

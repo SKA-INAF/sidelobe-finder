@@ -1,3 +1,7 @@
+##################################################
+###          MODULE IMPORT
+##################################################
+## STANDARD MODULES
 from __future__ import division
 import random
 import pprint
@@ -7,17 +11,24 @@ import numpy as np
 from optparse import OptionParser
 import pickle
 
+## IMAGE PROC MODULES
 from keras import backend as K
 from keras.optimizers import Adam, SGD, RMSprop
 from keras.layers import Input
 from keras.models import Model
+from keras.utils import generic_utils
+
+## MODULES
 from sidelobe_finder import config, data_generators
 from sidelobe_finder import losses as losses
 import sidelobe_finder.roi_helpers as roi_helpers
-from keras.utils import generic_utils
 
 sys.setrecursionlimit(40000)
 
+###########################
+##     OPTIONS
+###########################
+# - Define options
 parser = OptionParser()
 
 parser.add_option("-p", "--path", dest="train_path", help="Path to training data.")
@@ -32,11 +43,9 @@ parser.add_option("--epoch_length", type="int",dest="epoch_length", help="Number
 parser.add_option("--config_filename", dest="config_filename", help="Location to store all the metadata related to the training (to be used when testing).",default="config.pickle")
 parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.", default='./model_frcnn.hdf5')
 parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
-
 parser.add_option("--anchor_box_scales", dest="anchor_box_scales", help="Anchor box scales", default='2,4,8,16,32')
 
-
-
+# - Parse options
 (options, args) = parser.parse_args()
 
 if not options.train_path:   # if filename is not given
@@ -55,8 +64,9 @@ anchor_scales= []
 for item in anchor_scales_str_list:
 	anchor_scales.append(int(item))
 
+config_output_filename = options.config_filename
 
-# pass the settings from the command line, and persist them in the config object
+# - Pass the settings from the command line, and persist them in the config object
 C = config.Config()
 
 C.use_horizontal_flips = bool(options.horizontal_flips)
@@ -77,21 +87,21 @@ else:
 	raise ValueError
 
 
-# check if weight path was passed via command line
+# - Check if weight path was passed via command line
 if options.input_weight_path:
 	C.base_net_weights = options.input_weight_path
 else:
 	# set the path to weights based on backend and model
 	C.base_net_weights = nn.get_weight_path()
 
-########################
-##   ADDED BY SIMONE
-########################
-## Disable splitting of train/test data (not used internally so do not waste valuable train data)
-split_train_test_data= False
-########################
+# - Override anchor scales from command line
+C.anchor_box_scales= anchor_scales
+print('Anchor scales')
+print(C.anchor_box_scales)
 
-##all_imgs, classes_count, class_mapping = get_data(options.train_path)  ## ORIGINAL CODE
+
+# - Read input data (NB: disable splitting of train/test data (not used internally so do not waste valuable train data)
+split_train_test_data= False
 all_imgs, classes_count, class_mapping = get_data(options.train_path,split_train_test_data)
 
 if 'bg' not in classes_count:
@@ -106,26 +116,18 @@ print('Training images per class:')
 pprint.pprint(classes_count)
 print('Num classes (including bg) = {}'.format(len(classes_count)))
 
-config_output_filename = options.config_filename
 
+# - Dump configuration to file
 with open(config_output_filename, 'wb') as config_f:
 	pickle.dump(C,config_f)
 	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
 
 
-########################
-##   ADDED BY SIMONE
-########################
-## Disable splitting of train/test data (not used internally so do not waste valuable train data)
-split_train_test_data= False
-
-## Override anchor scales from command line
-C.anchor_box_scales= anchor_scales
-print('Anchor scales')
-print(C.anchor_box_scales)
-#########################
 
 
+###########################
+##     PREPARE DATA
+###########################
 random.shuffle(all_imgs)
 
 num_imgs = len(all_imgs)
@@ -136,12 +138,19 @@ val_imgs = [s for s in all_imgs if s['imageset'] == 'test']
 print('Num train samples {}'.format(len(train_imgs)))
 print('Num val samples {}'.format(len(val_imgs)))
 
+for item in train_imgs:
+	print item['bboxes']
+
 
 #print('nn.get_img_output_length=%d' % nn.get_img_output_length)
 
 data_gen_train = data_generators.get_anchor_gt(train_imgs, classes_count, C, nn.get_img_output_length, K.image_dim_ordering(), mode='train')
 data_gen_val = data_generators.get_anchor_gt(val_imgs, classes_count, C, nn.get_img_output_length,K.image_dim_ordering(), mode='val')
 
+
+###########################
+##     BUILD NETWORK
+###########################
 if K.image_dim_ordering() == 'th':
 	input_shape_img = (3, None, None)
 else:
@@ -194,6 +203,11 @@ start_time = time.time()
 best_loss = np.Inf
 
 class_mapping_inv = {v: k for k, v in class_mapping.items()}
+
+
+#==================================
+#    RUN TRAINING
+#==================================
 print('Starting training')
 
 vis = True

@@ -3,16 +3,6 @@ import numpy as np
 
 from . import data_augment
 
-## ASTRO MODULES
-#from astropy.io import ascii, fits
-#from astropy.units import Quantity
-#from astropy.modeling.parameters import Parameter
-#from astropy.modeling.core import Fittable2DModel
-#from astropy import wcs
-#from astropy import units as u
-#from astropy.visualization import ZScaleInterval
-
-
 
 def get_data(input_path,split_train_test_data=True):
 	found_bg = False
@@ -73,8 +63,7 @@ def get_data(input_path,split_train_test_data=True):
 					all_imgs[filename]['imageset'] = 'trainval'					
 
 			all_imgs[filename]['bboxes'].append({'class': class_name, 'x1': int(float(x1)), 'x2': int(float(x2)), 'y1': int(float(y1)), 'y2': int(float(y2))})
-			#print all_imgs[filename]
-
+			print all_imgs[filename]['bboxes']
 
 		all_data = []
 		for key in all_imgs:
