@@ -44,6 +44,8 @@ parser.add_option("--config_filename", dest="config_filename", help="Location to
 parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.", default='./model_frcnn.hdf5')
 parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
 parser.add_option("--anchor_box_scales", dest="anchor_box_scales", help="Anchor box scales", default='2,4,8,16,32')
+parser.add_option("--anchor_box_ratios", dest="anchor_box_ratios", help="Anchor box ratios", default='1,2,3')
+parser.add_option("--rectangular_box", dest="rectangular_box", help="Force anchor box to be rectangle (e.g. do not pass square anchor size) (Default=false).", action="store_true", default=False)
 
 # - Parse options
 (options, args) = parser.parse_args()
@@ -63,6 +65,24 @@ anchor_scales_str_list= anchor_scales_str.split(",")
 anchor_scales= []
 for item in anchor_scales_str_list:
 	anchor_scales.append(int(item))
+
+force_rectangular_anchor= bool(options.rectangular_box)
+
+anchor_ratios_str= options.anchor_box_ratios
+anchor_ratios_str_list= anchor_ratios_str.split(",")
+anchor_ratios= []
+n_ratios= len(anchor_ratios_str_list)
+for index in range(n_ratios):
+	r= anchor_ratios_str_list[index]
+	r0= anchor_ratios_str_list[0]
+	if r==r0:
+		if not force_rectangular_anchor:	
+			anchor_ratios.append([int(r),int(r0)])
+	else:
+		anchor_ratios.append([int(r),int(r0)])
+		anchor_ratios.append([int(r0),int(r)])
+
+
 
 config_output_filename = options.config_filename
 
@@ -98,6 +118,12 @@ else:
 C.anchor_box_scales= anchor_scales
 print('Anchor scales')
 print(C.anchor_box_scales)
+
+# - Override anchor box ratios from command line
+C.anchor_box_ratios= anchor_ratios
+print('Anchor box ratios')
+print(C.anchor_box_ratios)
+
 
 
 # - Read input data (NB: disable splitting of train/test data (not used internally so do not waste valuable train data)
