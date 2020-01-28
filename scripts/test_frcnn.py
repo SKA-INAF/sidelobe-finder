@@ -1,30 +1,55 @@
+#!/usr/bin/env python
+
+##################################################
+###          MODULE IMPORT
+##################################################
+## STANDARD MODULES
 from __future__ import division
+from __future__ import print_function
+
 import os
-import cv2
 import numpy as np
 import sys
 import pickle
 from optparse import OptionParser
 import time
-from sidelobe_finder import config
+
+## IMAGE PROC MODULES
+import cv2
 from keras import backend as K
 from keras.layers import Input
 from keras.models import Model
-from sidelobe_finder import roi_helpers
-from sidelobe_finder import data_augment
 
+## ASTRO MODULES
+from astropy.io import ascii
+
+## GRAPHICS MODULES
 import matplotlib.pyplot as plt
 from matplotlib import patches
 
+## MODULES
+from sidelobe_finder import config
+from sidelobe_finder import roi_helpers
+from sidelobe_finder import data_augment
+
+
 sys.setrecursionlimit(40000)
 
+
+###########################
+##     OPTIONS
+###########################
+# - Define options
 parser = OptionParser()
 
 parser.add_option("-p", "--path", dest="test_path", help="Path to test data.")
 parser.add_option("-n", "--num_rois", type="int", dest="num_rois",help="Number of ROIs per iteration. Higher means more memory use.", default=32)
 parser.add_option("--config_filename", dest="config_filename", help="Location to read the metadata related to the training (generated when training).",default="config.pickle")
 parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='resnet50')
+parser.add_option("--bb_filename", dest="bb_filename", help="Location to read the true bounding box info of test data",default="")
+parser.add_option("--anchor_box_scales", dest="anchor_box_scales", help="Anchor box scales", default='2,4,8,16,32')
 
+# - Parse options
 (options, args) = parser.parse_args()
 
 if not options.test_path:   # if filename is not given
@@ -32,7 +57,14 @@ if not options.test_path:   # if filename is not given
 
 
 config_output_filename = options.config_filename
+bb_filename = options.bb_filename
+anchor_scales_str= options.anchor_box_scales
+anchor_scales_str_list= anchor_scales_str.split(",")
+anchor_scales= []
+for item in anchor_scales_str_list:
+	anchor_scales.append(int(item))
 
+# - Read options from stored config and override some with those given from command line
 with open(config_output_filename, 'rb') as f_in:
 	C = pickle.load(f_in)
 
@@ -41,13 +73,34 @@ if C.network == 'resnet50':
 elif C.network == 'vgg':
 	import sidelobe_finder.vgg as nn
 
-# turn off any data augmentation at test time
+# - Turn off any data augmentation at test time
 C.use_horizontal_flips = False
 C.use_vertical_flips = False
 C.rot_90 = False
 
 img_path = options.test_path
 
+class_mapping = C.class_mapping
+
+if 'bg' not in class_mapping:
+	class_mapping['bg'] = len(class_mapping)
+
+class_mapping = {v: k for k, v in class_mapping.items()}
+print(class_mapping)
+class_to_color = {class_mapping[v]: np.random.randint(0, 255, 3) for v in class_mapping}
+C.num_rois = int(options.num_rois)
+
+if C.network == 'resnet50':
+	num_features = 1024
+elif C.network == 'vgg':
+	num_features = 512
+
+# - Override anchor scales from command line
+C.anchor_box_scales= anchor_scales
+
+###########################
+##     FUNCTIONS
+###########################
 def format_img_size(img, C):
 	""" formats the image size based on config """
 	img_min_side = float(C.im_size)
@@ -92,21 +145,34 @@ def get_real_coordinates(ratio, x1, y1, x2, y2):
 
 	return (real_x1, real_y1, real_x2 ,real_y2)
 
-class_mapping = C.class_mapping
 
-if 'bg' not in class_mapping:
-	class_mapping['bg'] = len(class_mapping)
+###########################
+##     MAIN
+###########################
 
-class_mapping = {v: k for k, v in class_mapping.items()}
-print(class_mapping)
-class_to_color = {class_mapping[v]: np.random.randint(0, 255, 3) for v in class_mapping}
-C.num_rois = int(options.num_rois)
+#================================
+#    READ TRUE BOUNDING BOXES
+#================================ 
+true_bb_dict= {}
+if bb_filename:
+	bb_table= ascii.read(bb_filename)
+	for item in bb_table:
+		imgfilename= item['col1']
+		x1= item['col2']
+		y1= item['col3']
+		x2= item['col4']
+		y2= item['col5']
+		bb_dict= {}
+		bb_dict['x1']= x1
+		bb_dict['y1']= y1
+		bb_dict['x2']= x2
+		bb_dict['y2']= y2
+		true_bb_dict[imgfilename]= bb_dict
 
-if C.network == 'resnet50':
-	num_features = 1024
-elif C.network == 'vgg':
-	num_features = 512
-
+#================================
+#    BUILD NN
+#================================ 
+# - Initialize NN architecture layout
 if K.image_dim_ordering() == 'th':
 	input_shape_img = (3, None, None)
 	input_shape_features = (num_features, None, None)
@@ -114,25 +180,25 @@ else:
 	input_shape_img = (None, None, 3)
 	input_shape_features = (None, None, num_features)
 
-
 img_input = Input(shape=input_shape_img)
 roi_input = Input(shape=(C.num_rois, 4))
 feature_map_input = Input(shape=input_shape_features)
 
-# define the base network (resnet here, can be VGG, Inception, etc)
+# - Define the base network (resnet here, can be VGG, Inception, etc)
 shared_layers = nn.nn_base(img_input, trainable=True)
 
-# define the RPN, built on the base layers
+# - Define the RPN, built on the base layers
 num_anchors = len(C.anchor_box_scales) * len(C.anchor_box_ratios)
 rpn_layers = nn.rpn(shared_layers, num_anchors)
 
+# - Define classifier
 classifier = nn.classifier(feature_map_input, roi_input, C.num_rois, nb_classes=len(class_mapping), trainable=True)
 
 model_rpn = Model(img_input, rpn_layers)
 model_classifier_only = Model([feature_map_input, roi_input], classifier)
-
 model_classifier = Model([feature_map_input, roi_input], classifier)
 
+# - Loading NN weights
 print('Loading weights from {}'.format(C.model_path))
 model_rpn.load_weights(C.model_path, by_name=True)
 model_classifier.load_weights(C.model_path, by_name=True)
@@ -140,12 +206,13 @@ model_classifier.load_weights(C.model_path, by_name=True)
 model_rpn.compile(optimizer='sgd', loss='mse')
 model_classifier.compile(optimizer='sgd', loss='mse')
 
+
+#==================================
+#    RUN CLASSIFIER ON TEST DATA
+#==================================
 all_imgs = []
-
 classes = {}
-
 bbox_threshold = 0.8
-
 visualise = True
 
 for idx, img_name in enumerate(sorted(os.listdir(img_path))):
@@ -154,40 +221,40 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
 	print(img_name)
 	st = time.time()
 	filepath = os.path.join(img_path,img_name)
+	file_extension = os.path.splitext(filepath)[1]
 
-	# ==============================
-	# ==    ADDED BY SIMO
-	# ==============================
-	#img = cv2.imread(filepath) ## ORIGINAL CODE
-	img, header= data_augment.read_fits(filepath,stretch=True,normalize=True,convertToRGB=True)
-	# ==============================
+	# - Read image data
+	if file_extension=='.fits':
+		img, header= data_augment.read_fits(filepath,stretch=True,normalize=True,convertToRGB=True)
+	else:
+		img = cv2.imread(filepath)
 
+	# - Read true object bounding boxes (if given)
+	if true_bb_dict:
+		bb_dict= true_bb_dict[filepath]
+		true_bb_x1= bb_dict['x1']
+		true_bb_y1= bb_dict['y1']
+		true_bb_x2= bb_dict['x2']
+		true_bb_y2= bb_dict['y2']	
+	
+	# - Modify image format
 	X, ratio = format_img(img, C)
 
 	if K.image_dim_ordering() == 'tf':
 		X = np.transpose(X, (0, 2, 3, 1))
 
-	# get the feature maps and output from the RPN
+	# - Get the feature maps and output from the RPN
 	[Y1, Y2, F] = model_rpn.predict(X)
 	
-
-	R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.7) ## ORIGINAL
-	#R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.9)
-
-	# convert from (x1,y1,x2,y2) to (x,y,w,h)
+	R = roi_helpers.rpn_to_roi(Y1, Y2, C, K.image_dim_ordering(), overlap_thresh=0.7)
+	
+	# - Convert from (x1,y1,x2,y2) to (x,y,w,h)
 	R[:, 2] -= R[:, 0]
 	R[:, 3] -= R[:, 1]
 
-	#print("R")
-	#print(R)
-	#print(type(R))
-	#print(R.shape)
-
-	# apply the spatial pyramid pooling to the proposed regions
+	# - Apply the spatial pyramid pooling to the proposed regions
 	bboxes = {}
 	probs = {}
-
-	
 
 	for jk in range(R.shape[0]//C.num_rois + 1):
 		ROIs = np.expand_dims(R[C.num_rois*jk:C.num_rois*(jk+1), :], axis=0)
@@ -234,15 +301,25 @@ for idx, img_name in enumerate(sorted(os.listdir(img_path))):
 
 	all_dets = []
 
-	# - Draw figure
+	##############################
+	##       DRAW FIGURE
+	##############################
+	# - Create figure & axis
 	fig = plt.figure()	
 	ax = plt.axes([0,0,1,1], frameon=False)
 	ax.get_xaxis().set_visible(False)
 	ax.get_yaxis().set_visible(False)
 	plt.autoscale(tight=True)
 
+	# - Draw image
 	plt.imshow(img,cmap='gray')
 
+	# - Draw true bounding boxes
+	if true_bb_dict:
+		true_rect = patches.Rectangle((true_bb_x1,true_bb_y1),true_bb_x2-true_bb_x1,true_bb_y2-true_bb_y1, edgecolor='red', facecolor = 'none')
+		ax.add_patch(true_rect)
+
+	# - Draw detected objects
 	for key in bboxes:
 		bbox = np.array(bboxes[key])
 
