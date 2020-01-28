@@ -83,12 +83,12 @@ def calc_rpn(C, img_data, width, height, resized_width, resized_height, img_leng
 	anchor_ratios = C.anchor_box_ratios
 	num_anchors = len(anchor_sizes) * len(anchor_ratios)	
 
-	print("calc_rpn: anchor_ratios")
-	print(anchor_ratios)
-	print("calc_rpn: anchor_sizes")
-	print(anchor_sizes)
-	print("downscale")
-	print(downscale)
+	#print("calc_rpn: anchor_ratios")
+	#print(anchor_ratios)
+	#print("calc_rpn: anchor_sizes")
+	#print(anchor_sizes)
+	#print("downscale")
+	#print(downscale)
 
 	# calculate the output map size based on the network architecture
 
