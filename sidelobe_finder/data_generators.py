@@ -336,10 +336,16 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
 
 				# read in image, and optionally add augmentation
 				#print("Read in image ...")
+				print("img_data BEFORE AUGMENTATION")
+				print(img_data['bboxes'])
+
 				if mode == 'train':
 					img_data_aug, x_img = data_augment.augment(img_data, C, augment=True)
 				else:
 					img_data_aug, x_img = data_augment.augment(img_data, C, augment=False)
+
+				print("img_data AFTER AUGMENTATION")
+				print(img_data_aug['bboxes'])
 
 				(width, height) = (img_data_aug['width'], img_data_aug['height'])
 				(rows, cols, _) = x_img.shape
@@ -352,6 +358,8 @@ def get_anchor_gt(all_img_data, class_count, C, img_length_calc_function, backen
 
 				# resize the image so that smalles side is length = 600px
 				x_img = cv2.resize(x_img, (resized_width, resized_height), interpolation=cv2.INTER_CUBIC)
+
+				print("width=%d, height=%d, resized_width=%d, resized_height=%d" % (width,height,resized_width,resized_height))
 
 				try:
 					y_rpn_cls, y_rpn_regr = calc_rpn(C, img_data_aug, width, height, resized_width, resized_height, img_length_calc_function)
