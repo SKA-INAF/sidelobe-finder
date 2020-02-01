@@ -46,6 +46,8 @@ parser.add_option("--input_weight_path", dest="input_weight_path", help="Input p
 parser.add_option("--anchor_box_scales", dest="anchor_box_scales", help="Anchor box scales", default='2,4,8,16,32')
 parser.add_option("--anchor_box_ratios", dest="anchor_box_ratios", help="Anchor box ratios", default='1,2,3')
 parser.add_option("--rectangular_box", dest="rectangular_box", help="Force anchor box to be rectangle (e.g. do not pass square anchor size) (Default=false).", action="store_true", default=False)
+parser.add_option("--rpn_stride", dest="rpn_stride", type="int", help="RPN stride parameter (Default=16).", default=16)
+
 
 # - Parse options
 (options, args) = parser.parse_args()
@@ -75,6 +77,7 @@ n_ratios= len(anchor_ratios_str_list)
 for index in range(n_ratios):
 	r= anchor_ratios_str_list[index]
 	r0= anchor_ratios_str_list[0]
+
 	if r==r0:
 		if not force_rectangular_anchor:	
 			anchor_ratios.append([int(r),int(r0)])
@@ -82,7 +85,7 @@ for index in range(n_ratios):
 		anchor_ratios.append([int(r),int(r0)])
 		anchor_ratios.append([int(r0),int(r)])
 
-
+rpn_stride= options.rpn_stride
 
 config_output_filename = options.config_filename
 
@@ -95,6 +98,7 @@ C.rot_90 = bool(options.rot_90)
 
 C.model_path = options.output_weight_path
 C.num_rois = int(options.num_rois)
+C.rpn_stride= rpn_stride
 
 if options.network == 'vgg':
 	C.network = 'vgg'
