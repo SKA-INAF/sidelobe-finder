@@ -48,6 +48,7 @@ parser.add_option("--config_filename", dest="config_filename", help="Location to
 parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='resnet50')
 parser.add_option("--bb_filename", dest="bb_filename", help="Location to read the true bounding box info of test data",default="")
 parser.add_option("--anchor_box_scales", dest="anchor_box_scales", help="Anchor box scales", default='2,4,8,16,32')
+parser.add_option("--rpn_stride", dest="rpn_stride", type="int", help="RPN stride parameter (Default=16).", default=16)
 
 # - Parse options
 (options, args) = parser.parse_args()
@@ -63,6 +64,8 @@ anchor_scales_str_list= anchor_scales_str.split(",")
 anchor_scales= []
 for item in anchor_scales_str_list:
 	anchor_scales.append(int(item))
+
+rpn_stride= options.rpn_stride
 
 # - Read options from stored config and override some with those given from command line
 with open(config_output_filename, 'rb') as f_in:
@@ -100,6 +103,7 @@ else:
 
 # - Override anchor scales from command line
 C.anchor_box_scales= anchor_scales
+C.rpn_stride= rpn_stride
 
 ###########################
 ##     FUNCTIONS
