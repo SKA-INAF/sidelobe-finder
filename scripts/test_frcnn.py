@@ -42,11 +42,13 @@ sys.setrecursionlimit(40000)
 # - Define options
 parser = OptionParser()
 
-parser.add_option("-p", "--path", dest="test_path", help="Path to test data.")
+parser.add_option("--filename_test", dest="filename_test", help="Test data filename")
+#parser.add_option("-p", "--path", dest="test_path", help="Path to test data.")
 parser.add_option("-n", "--num_rois", type="int", dest="num_rois",help="Number of ROIs per iteration. Higher means more memory use.", default=32)
-parser.add_option("--config_filename", dest="config_filename", help="Location to read the metadata related to the training (generated when training).",default="config.pickle")
+#parser.add_option("--config_filename", dest="config_filename", help="Location to read the metadata related to the training (generated when training).",default="config.pickle")
+parser.add_option("--filename_config", dest="filename_config", help="Location to read the metadata related to the training (generated when training).",default="config.pickle")
 parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='resnet50')
-parser.add_option("--bb_filename", dest="bb_filename", help="Location to read the true bounding box info of test data",default="")
+#parser.add_option("--bb_filename", dest="bb_filename", help="Location to read the true bounding box info of test data",default="")
 parser.add_option("--anchor_box_scales", dest="anchor_box_scales", help="Anchor box scales", default='2,4,8,16,32')
 parser.add_option("--rpn_stride", dest="rpn_stride", type="int", help="RPN stride parameter (Default=16).", default=16)
 parser.add_option("--img_size", dest="img_size", type="int", help="Image size per side in pixels (Default=200).", default=200)
@@ -54,12 +56,18 @@ parser.add_option("--img_size", dest="img_size", type="int", help="Image size pe
 # - Parse options
 (options, args) = parser.parse_args()
 
-if not options.test_path:   # if filename is not given
-	parser.error('Error: path to test data must be specified. Pass --path to command line')
+#if not options.test_path:   # if filename is not given
+#	parser.error('Error: path to test data must be specified. Pass --path to command line')
+if not options.filename_test:   # if filename is not given
+	parser.error('Error: path to test data list must be specified. Pass --filename_test to command line')
 
 
-config_output_filename = options.config_filename
-bb_filename = options.bb_filename
+#config_output_filename = options.config_filename
+#bb_filename = options.bb_filename
+filename_test= options.filename_test
+config_output_filename = options.filename_config
+#bb_filename = options.bb_filename
+
 anchor_scales_str= options.anchor_box_scales
 anchor_scales_str_list= anchor_scales_str.split(",")
 anchor_scales= []
@@ -83,7 +91,7 @@ C.use_horizontal_flips = False
 C.use_vertical_flips = False
 C.rot_90 = False
 
-img_path = options.test_path
+#img_path = options.test_path
 
 class_mapping = C.class_mapping
 
@@ -164,8 +172,10 @@ def get_real_coordinates(ratio, x1, y1, x2, y2):
 #    READ TRUE BOUNDING BOXES
 #================================ 
 true_bb_dict= {}
-if bb_filename:
-	bb_table= ascii.read(bb_filename)
+all_imgs = []
+#if bb_filename:
+#	bb_table= ascii.read(bb_filename)
+	bb_table= ascii.read(filename_test)
 	for item in bb_table:
 		imgfilename= item['col1']
 		x1= item['col2']
@@ -177,6 +187,7 @@ if bb_filename:
 		bb_dict['y1']= y1
 		bb_dict['x2']= x2
 		bb_dict['y2']= y2
+		all_imgs.append(imgfilename)
 		true_bb_dict[imgfilename]= bb_dict
 
 #================================
@@ -220,17 +231,21 @@ model_classifier.compile(optimizer='sgd', loss='mse')
 #==================================
 #    RUN CLASSIFIER ON TEST DATA
 #==================================
-all_imgs = []
+
 classes = {}
 bbox_threshold = 0.8
 visualise = True
 
-for idx, img_name in enumerate(sorted(os.listdir(img_path))):
-	if not img_name.lower().endswith(('.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff', '.fits')):
-		continue
-	print(img_name)
+#for idx, img_name in enumerate(sorted(os.listdir(img_path))):
+#	if not img_name.lower().endswith(('.bmp', '.jpeg', '.jpg', '.png', '.tif', '.tiff', '.fits')):
+#		continue
+#	print(img_name)
+
+for filepath in all_imgs:
+
+	print(filepath)
 	st = time.time()
-	filepath = os.path.join(img_path,img_name)
+	#filepath = os.path.join(img_path,img_name)
 	file_extension = os.path.splitext(filepath)[1]
 
 	# - Read image data
