@@ -372,11 +372,19 @@ for filepath in all_imgs:
 			cv2.rectangle(img, (textOrg[0] - 5,textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (255, 255, 255), -1)
 			cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
-			rect = patches.Rectangle((real_x1,real_y1), width, height, edgecolor = 'yellow', facecolor = 'none')
+			col_r= int(class_to_color[key][0])
+			col_g= int(class_to_color[key][1])
+			col_b= int(class_to_color[key][2])
+
+			#rect = patches.Rectangle((real_x1,real_y1), width, height, edgecolor = 'yellow', facecolor = 'none')
+			rect = patches.Rectangle((real_x1,real_y1), width, height, edgecolor = [(col_r,col_g,col_b)], facecolor = 'none')
 			ax.add_patch(rect)
-			plt.scatter(real_x1, real_y1, s=12, color='yellow')
-			plt.scatter(real_x2, real_y2, s=12,color='yellow')
-			ax.annotate('sidelobe', xy=(real_x1+0.5*width,real_y1-10),color='yellow')
+			#plt.scatter(real_x1, real_y1, s=12, color='yellow')
+			#plt.scatter(real_x2, real_y2, s=12,color='yellow')
+			#ax.annotate(textLabel, xy=(real_x1+0.5*width,real_y1-10),color='yellow')
+			plt.scatter(real_x1, real_y1, s=12, color=[(col_r,col_g,col_b)])
+			plt.scatter(real_x2, real_y2, s=12,color=[(col_r,col_g,col_b)])
+			ax.annotate(textLabel, xy=(real_x1+0.5*width,real_y1-10),color=[(col_r,col_g,col_b)])
 
 	print('Elapsed time = {}'.format(time.time() - st))
 	print(all_dets)
