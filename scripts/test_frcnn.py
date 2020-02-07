@@ -372,9 +372,9 @@ for filepath in all_imgs:
 			cv2.rectangle(img, (textOrg[0] - 5,textOrg[1]+baseLine - 5), (textOrg[0]+retval[0] + 5, textOrg[1]-retval[1] - 5), (255, 255, 255), -1)
 			cv2.putText(img, textLabel, textOrg, cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 1)
 
-			col_r= int(class_to_color[key][0])
-			col_g= int(class_to_color[key][1])
-			col_b= int(class_to_color[key][2])
+			col_r= int(class_to_color[key][0]/255.)
+			col_g= int(class_to_color[key][1]/255.)
+			col_b= int(class_to_color[key][2]/255.)
 
 			#rect = patches.Rectangle((real_x1,real_y1), width, height, edgecolor = 'yellow', facecolor = 'none')
 			rect = patches.Rectangle((real_x1,real_y1), width, height, edgecolor = [(col_r,col_g,col_b)], facecolor = 'none')
