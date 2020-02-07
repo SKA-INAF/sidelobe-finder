@@ -175,6 +175,7 @@ true_bb_dict= {}
 all_imgs = []
 #if bb_filename:
 #	bb_table= ascii.read(bb_filename)
+if filename_test:
 	bb_table= ascii.read(filename_test)
 	for item in bb_table:
 		imgfilename= item['col1']
