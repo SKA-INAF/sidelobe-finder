@@ -377,14 +377,14 @@ for filepath in all_imgs:
 			col_b= int(class_to_color[key][2]/255.)
 
 			#rect = patches.Rectangle((real_x1,real_y1), width, height, edgecolor = 'yellow', facecolor = 'none')
-			rect = patches.Rectangle((real_x1,real_y1), width, height, edgecolor = [(col_r,col_g,col_b)], facecolor = 'none')
+			rect = patches.Rectangle((real_x1,real_y1), width, height, edgecolor = (col_r,col_g,col_b), facecolor = 'none')
 			ax.add_patch(rect)
 			#plt.scatter(real_x1, real_y1, s=12, color='yellow')
 			#plt.scatter(real_x2, real_y2, s=12,color='yellow')
 			#ax.annotate(textLabel, xy=(real_x1+0.5*width,real_y1-10),color='yellow')
-			plt.scatter(real_x1, real_y1, s=12, color=[(col_r,col_g,col_b)])
-			plt.scatter(real_x2, real_y2, s=12,color=[(col_r,col_g,col_b)])
-			ax.annotate(textLabel, xy=(real_x1+0.5*width,real_y1-10),color=[(col_r,col_g,col_b)])
+			plt.scatter(real_x1, real_y1, s=12, color=(col_r,col_g,col_b))
+			plt.scatter(real_x2, real_y2, s=12,color=(col_r,col_g,col_b))
+			ax.annotate(textLabel, xy=(real_x1+0.5*width,real_y1-10),color=(col_r,col_g,col_b))
 
 	print('Elapsed time = {}'.format(time.time() - st))
 	print(all_dets)
