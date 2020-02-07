@@ -49,6 +49,7 @@ parser.add_option("--network", dest="network", help="Base network to use. Suppor
 parser.add_option("--bb_filename", dest="bb_filename", help="Location to read the true bounding box info of test data",default="")
 parser.add_option("--anchor_box_scales", dest="anchor_box_scales", help="Anchor box scales", default='2,4,8,16,32')
 parser.add_option("--rpn_stride", dest="rpn_stride", type="int", help="RPN stride parameter (Default=16).", default=16)
+parser.add_option("--img_size", dest="img_size", type="int", help="Image size per side in pixels (Default=200).", default=200)
 
 # - Parse options
 (options, args) = parser.parse_args()
@@ -66,6 +67,7 @@ for item in anchor_scales_str_list:
 	anchor_scales.append(int(item))
 
 rpn_stride= options.rpn_stride
+img_size= options.img_size
 
 # - Read options from stored config and override some with those given from command line
 with open(config_output_filename, 'rb') as f_in:
@@ -104,6 +106,7 @@ else:
 # - Override anchor scales from command line
 C.anchor_box_scales= anchor_scales
 C.rpn_stride= rpn_stride
+C.im_size= img_size
 
 ###########################
 ##     FUNCTIONS

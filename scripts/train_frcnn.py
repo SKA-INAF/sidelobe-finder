@@ -47,6 +47,7 @@ parser.add_option("--anchor_box_scales", dest="anchor_box_scales", help="Anchor 
 parser.add_option("--anchor_box_ratios", dest="anchor_box_ratios", help="Anchor box ratios", default='1,2,3')
 parser.add_option("--rectangular_box", dest="rectangular_box", help="Force anchor box to be rectangle (e.g. do not pass square anchor size) (Default=false).", action="store_true", default=False)
 parser.add_option("--rpn_stride", dest="rpn_stride", type="int", help="RPN stride parameter (Default=16).", default=16)
+parser.add_option("--img_size", dest="img_size", type="int", help="Image size per side in pixels (Default=200).", default=200)
 
 
 # - Parse options
@@ -86,6 +87,7 @@ for index in range(n_ratios):
 		anchor_ratios.append([int(r0),int(r)])
 
 rpn_stride= options.rpn_stride
+img_size= options.img_size
 
 config_output_filename = options.config_filename
 
@@ -99,6 +101,7 @@ C.rot_90 = bool(options.rot_90)
 C.model_path = options.output_weight_path
 C.num_rois = int(options.num_rois)
 C.rpn_stride= rpn_stride
+C.im_size= img_size
 
 if options.network == 'vgg':
 	C.network = 'vgg'
