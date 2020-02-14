@@ -1,8 +1,16 @@
 import numpy as np
 import pdb
 import math
-from . import data_generators
+#from . import data_generators
+#from . import utils
+from sidelobe_finder.utils import Utils
 import copy
+import logging
+
+##############################
+##     GLOBAL VARS
+##############################
+logger = logging.getLogger(__name__)
 
 
 def calc_iou(R, img_data, C, class_mapping):
@@ -10,7 +18,9 @@ def calc_iou(R, img_data, C, class_mapping):
 	bboxes = img_data['bboxes']
 	(width, height) = (img_data['width'], img_data['height'])
 	# get image dimensions for resizing
-	(resized_width, resized_height) = data_generators.get_new_img_size(width, height, C.im_size)
+	#(resized_width, resized_height) = data_generators.get_new_img_size(width, height, C.im_size)
+	(resized_width, resized_height) = Utils.get_new_img_size(width, height, C.im_size)
+
 
 	gta = np.zeros((len(bboxes), 4))
 
@@ -34,15 +44,19 @@ def calc_iou(R, img_data, C, class_mapping):
 		x2 = int(round(x2))
 		y2 = int(round(y2))
 
+
 		best_iou = 0.0
 		best_bbox = -1
 		for bbox_num in range(len(bboxes)):
-			curr_iou = data_generators.iou([gta[bbox_num, 0], gta[bbox_num, 2], gta[bbox_num, 1], gta[bbox_num, 3]], [x1, y1, x2, y2])
+			#curr_iou = data_generators.iou([gta[bbox_num, 0], gta[bbox_num, 2], gta[bbox_num, 1], gta[bbox_num, 3]], [x1, y1, x2, y2])
+			curr_iou = Utils.iou([gta[bbox_num, 0], gta[bbox_num, 2], gta[bbox_num, 1], gta[bbox_num, 3]], [x1, y1, x2, y2])
+			logger.debug("anchor(%d,%d,%d,%d), gtbbox(%d,%d,%d,%d), curr_iou=%f" % (x1,x2,y1,y2,gta[bbox_num, 0], gta[bbox_num, 1], gta[bbox_num, 2], gta[bbox_num, 3],curr_iou))
 			if curr_iou > best_iou:
 				best_iou = curr_iou
 				best_bbox = bbox_num
 
 		if best_iou < C.classifier_min_overlap:
+				#logger.debug("Best IOU (%f) is < minOverlap (%f)" % (best_iou,C.classifier_min_overlap))
 				continue
 		else:
 			w = x2 - x1
@@ -288,6 +302,17 @@ def rpn_to_roi(rpn_layer, regr_layer, C, dim_ordering, use_regr=True, max_boxes=
 	all_boxes = np.delete(all_boxes, idxs, 0)
 	all_probs = np.delete(all_probs, idxs, 0)
 
+	print("all_boxes")
+	print(type(all_boxes))
+	print(all_boxes.shape)
+	print("all_probs")
+	print(type(all_probs))
+	print(all_probs.shape)
+
 	result = non_max_suppression_fast(all_boxes, all_probs, overlap_thresh=overlap_thresh, max_boxes=max_boxes)[0]
+
+	print("result")
+	print(type(result))
+	print(result.shape)
 
 	return result
