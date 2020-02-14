@@ -60,5 +60,5 @@ setup(
 	long_description=read('README.md'),
 	packages=['sidelobe_finder'],
 	install_requires=reqs,
-	scripts=['scripts/train_frcnn.py','scripts/test_frcnn.py'],
+	scripts=['scripts/train_frcnn.py','scripts/test_frcnn.py','scripts/train.py'],
 )
